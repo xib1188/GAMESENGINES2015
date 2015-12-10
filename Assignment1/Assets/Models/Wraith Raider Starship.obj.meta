@@ -109,6 +109,26 @@ ModelImporter:
     4300034: red_mesh01_1
     4300036: windshield_usemtl_1
     4300038: windshield_usemtl_2
+    6400000: cockpit2_usemtl_1
+    6400002: cockpit2_usemtl_2
+    6400004: cockpit2_usemtl_3
+    6400006: cockpit2_usemtl_4
+    6400008: couplers__1
+    6400010: cushion_usemtl_1
+    6400012: dash_usemtl_1
+    6400014: dash_usemtl_2
+    6400016: dash_usemtl_3
+    6400018: dash_usemtl_4
+    6400020: door_usemtl_1
+    6400022: door_usemtl_2
+    6400024: green__1
+    6400026: lights.2_mesh01_1
+    6400028: mesh01_MeshPart0
+    6400030: mesh01_MeshPart1
+    6400032: propulsion_usemtl_1
+    6400034: red_mesh01_1
+    6400036: windshield_usemtl_1
+    6400038: windshield_usemtl_2
   materials:
     importMaterials: 1
     materialName: 0
@@ -134,7 +154,7 @@ ModelImporter:
     lODScreenPercentages: []
     globalScale: 1
     meshCompression: 0
-    addColliders: 0
+    addColliders: 1
     importBlendShapes: 1
     swapUVChannels: 0
     generateSecondaryUV: 0

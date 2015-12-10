@@ -5,30 +5,47 @@ using GamesEngines;
 
 public class PlayerController : MonoBehaviour {
 
+
+
+
 	private GameController gm;
 	private GameObject camera;
 
+	/*
+	 * two ring spaces (tunnels), when the player is inside one, the game controller
+	 * may make changes in the other
+	 */
 	public Ring[] ringSpace1;
 	public Ring[] ringSpace2;
 
-
+	/*tunnels characteristics*/
 	private float tunnelsSideSize;
 	private int tunnelsNSides;
 	private int tunnelsLenght;
 
+	//player speed
 	private float speed;
+	//player current track inside the tunnel
 	private int track;
+	//player current ring inside the tunnel
 	private Ring currentRing;
+	//current used ring space
 	private int currentTunnelNumber;
+	//index of the current ring
 	private int currentRingNumber;
+	//turn slerp control var
 	private float turnInc;
+	//indicates if the player is changing betwen tracks
 	private bool turning;
+	//track index the player comes from
 	private int lastTrack;
 
+	//transform variables
 	private Quaternion rotation;
 	private Vector3 pointToLook;
 	private Vector3 translate;
 
+	//path control
 	private float distance;
 	private float inc;
 
@@ -55,18 +72,21 @@ public class PlayerController : MonoBehaviour {
 		turning = false;
 		currentRing = ringSpace1 [currentRingNumber];
 		nextPathPoint = currentRing.SideEndCenter(track);
-
+		//player (ship) init
 		gameObject.transform.position = currentRing.SideStartCenter (track);
 		gameObject.transform.rotation = currentRing.Rotation;
 		gameObject.transform.localScale = new Vector3 (tunnelsSideSize*0.5f/scaleRatio,tunnelsSideSize*0.5f/scaleRatio,tunnelsSideSize*0.5f/scaleRatio);
-
+		//camera init
 		camera = gameObject.transform.FindChild("PlayerCam1").gameObject;
 		camera.transform.localPosition = new Vector3 (0, +0.8f*(scaleRatio/tunnelsSideSize),-0.25f*(scaleRatio/tunnelsSideSize));
 		camera.GetComponent<Camera> ().nearClipPlane = 0.01f;
 		camera.transform.localRotation = Quaternion.AngleAxis (5, Vector3.right);
+
+
 	}
 
 	public void Inicialize(Ring[] l1, Ring[] l2, float size, float apothem, GameController gm){
+		/*function called by tha game controller to init and start the game*/
 		ringSpace1 = l1;	
 		ringSpace2 = l2;
 
@@ -80,6 +100,7 @@ public class PlayerController : MonoBehaviour {
 	}
 
 	void Update () {
+		/*key control to change current track*/
 		if (Input.GetKey(KeyCode.A)&&!turning){
 			if(track>0){
 				lastTrack = track;
@@ -99,6 +120,9 @@ public class PlayerController : MonoBehaviour {
 	}
 
 	private float Perception(){
+		/*this function returns <=0 if the next target point is behind the player
+		 *(used to change the next point to path follower)	
+		 */ 
 		Vector3 dis = nextPathPoint - gameObject.transform.position;
 		dis.Normalize ();
 		return Vector3.Dot(gameObject.transform.forward, dis);
@@ -106,13 +130,21 @@ public class PlayerController : MonoBehaviour {
 	
 	void Advance(){
 		float speedDelta = speed * Time.deltaTime;
+
+		/*
+		 * when a new ringspace is reached, the game manager is alerted.
+		 * Then, the gameManager is free to make changes in the non-used ringspace
+		 */ 
 		bool alertGameManager = false;
 		float dot = Perception ();
 
 		if (dot <= 0) {
 
-
+			//if current point is reached, next point is the new target
 			currentRingNumber++;
+			if(currentRingNumber%5 == 0)gm.score++;
+
+			//if the next point is greater than the ringspace length, change ringspace is needed
 			if (currentRingNumber == ringSpace1.Length) {
 				currentRingNumber = 0;
 				currentTunnelNumber = (currentTunnelNumber + 1) % 2;
@@ -125,6 +157,7 @@ public class PlayerController : MonoBehaviour {
 			}
 
 			float degRot;
+			//if the player is changing the track, rotation is required
 			if(turning){
 				turnInc+=0.20f;
 				nextPathPoint = Vector3.Slerp(currentRing.SideEndCenter(lastTrack),currentRing.SideEndCenter(track),turnInc);
@@ -139,6 +172,8 @@ public class PlayerController : MonoBehaviour {
 				nextPathPoint = currentRing.SideEndCenter(track);
 				degRot = currentRing.SideDegrees[track];
 			}
+
+			//update spaceship info
 			gameObject.transform.rotation = currentRing.Rotation;
 			transform.Rotate(Vector3.forward,degRot*Mathf.Rad2Deg,Space.Self);
 
@@ -147,11 +182,33 @@ public class PlayerController : MonoBehaviour {
 		}
 
 
-	
+
 		transform.Translate (new Vector3 (0,0,speedDelta));
 
 		if (alertGameManager)
 			gm.playerChange = true;
 	}
+
+	void OnCollisionEnter(Collision col){
+		GameObject mainCamera = GameObject.Find ("Main Camera");
+		GameObject player = GameObject.Find ("Player");
+		GameObject cam = player.transform.FindChild("PlayerCam1").gameObject;
+
+		Vector3 pos = transform.position;
+
+		mainCamera.transform.position = transform.position;
+		mainCamera.transform.Translate (transform.up * 10);
+		mainCamera.transform.Translate (transform.right * 10);
+		mainCamera.transform.LookAt (transform.position);
+
+		cam.GetComponent<Camera> ().enabled = false;
+		mainCamera.GetComponent<Camera> ().enabled = true;
+
+		GameObject expl = player.transform.FindChild("Explosion").gameObject;
+		expl.SetActive (true);
+
+	}
+
+
 
 }

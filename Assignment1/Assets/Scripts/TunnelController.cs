@@ -5,7 +5,7 @@ using System.IO;
 
 namespace GamesEngines{
 	public class TunnelController : MonoBehaviour {
-
+		private bool firstRun;
 		private Tunnel tunnel;
 		
 		public int tunnelLength = 50;
@@ -17,6 +17,8 @@ namespace GamesEngines{
 		public Vector2 finalRotation;
 		public float[] initialForm;
 		public float[] finalForm;
+
+		private int score;
 
 		Mesh mesh;
 		MeshRenderer meshRenderer;
@@ -51,8 +53,8 @@ namespace GamesEngines{
 			meshRenderer.material.SetTexture(0, texture);
 		}
 
-		public void Inicialize(int tunnelLength, int nTunnelSides, float tunnelSideSize, Vector3 initialCenter,
-		                       Vector2 initialRotation, Vector2 finalRotation, float[] initialForm, float[] finalForm){
+		public void Inicialize(int tunnelLength, int nTunnelSides, float tunnelSideSize,int score, Vector3 initialCenter,
+		                       Vector2 initialRotation, Vector2 finalRotation, float[] initialForm, float[] finalForm, bool first){
 			this.tunnelLength = tunnelLength;
 			this.nTunnelSides = nTunnelSides;
 			this.tunnelSideSize = tunnelSideSize;
@@ -61,16 +63,17 @@ namespace GamesEngines{
 			this.finalRotation = finalRotation;
 			this.initialForm = initialForm;
 			this.finalForm = finalForm;
-
+			this.score = score;
+			this.firstRun = first;
 			tunnel = new Tunnel(tunnelLength,nTunnelSides,tunnelSideSize);
 			tunnel.GenerateTunnel(initialCenter,initialRotation,finalRotation,initialForm,finalForm);
-
+			CreateObjects ();
 			this.enabled = true;
 		}
 
 		List<BackgroundWorker> workers = new List<BackgroundWorker>();
 
-		public void Refresh(Vector3 initialCenter, Vector2 initialRotation, Vector2 finalRotation,
+		public void Refresh(int score, Vector3 initialCenter, Vector2 initialRotation, Vector2 finalRotation,
 		                    float[] initialForm, float[] finalForm){
 			working = true;
 			this.initialCenter = initialCenter;
@@ -78,15 +81,18 @@ namespace GamesEngines{
 			this.finalRotation = finalRotation;
 			this.initialForm = initialForm;
 			this.finalForm = finalForm;
+			this.score = score;
 
 			BackgroundWorker backgroundWorker = new BackgroundWorker();
 
 			backgroundWorker.DoWork += (o, a) =>
 			{
 				GenerateNewTunnel();
+
 			};
 			backgroundWorker.RunWorkerCompleted += (o, a) =>
 			{
+				CreateObjects ();
 				GenerateMesh();	
 				//GenerateTexture();
 				meshRenderer.material.SetTexture(0, texture);
@@ -114,13 +120,83 @@ namespace GamesEngines{
 		}
 
 		void GenerateMesh(){
+			int uvsState = Random.Range(1, tunnel.Depth);
 			mesh.Clear();
 			mesh.vertices = tunnel.GenerateMeshVertices ().ToArray ();
 			mesh.triangles = tunnel.GenerateMeshTriangles ().ToArray ();
-			mesh.uv = tunnel.GenerateMeshUvs().ToArray();
+			mesh.uv = tunnel.GenerateMeshUvs(uvsState).ToArray();
 			mesh.RecalculateNormals ();
-
 		}
+		private List<GameObject> cubes;
+
+		void CreateObjects(){
+			if (cubes != null) {
+				for (int i = 0; i < cubes.Count; i++) {
+					Destroy (cubes [i]);
+				}
+			}
+			cubes = new List<GameObject> ();
+			//number of cubes based on the score (+score === +cubes === +difficulty)
+			int nCubes = Mathf.Min ((score / 500) + 1, 10) * 10;
+			int nSides = Mathf.Min ((score / 5000) + 1, (tunnel.NSides / 2) - 1);	
+
+			//ratios of danger object (r/10, r+=1 every 5000 score)
+			float dangerRatio = nSides / 10f;
+
+			List<Vector3> lvert = tunnel.GenerateVertices ();
+			float scaleSize = tunnelSideSize / 1.75f;
+
+			int iinc = tunnel.Depth / nCubes;
+			int starti = 0;
+			if (firstRun)
+				starti = 10;
+
+
+			for (int i = starti; i < tunnelLength; i += iinc) {
+				bool[] s = new bool[nTunnelSides];
+				for (int j = 0; j < nSides; j++) {
+					int side = Random.Range (0, nTunnelSides-1);
+					while (s[side])
+						side = Random.Range (0, nTunnelSides-1);
+
+					bool isDangerous = (Random.Range(0,10-nSides) == 0);
+
+					GameObject obj;
+					Material mat;
+					if(isDangerous){
+						obj = GameObject.CreatePrimitive (PrimitiveType.Cylinder);
+						obj.transform.localScale = new Vector3 (scaleSize, scaleSize/1.5f, scaleSize);
+						mat = Resources.Load("danger",typeof(Material)) as Material;
+					}
+					else{
+						obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+						obj.transform.localScale = new Vector3 (scaleSize, scaleSize, scaleSize);
+						mat = Resources.Load("TNT",typeof(Material)) as Material;
+					}
+
+					Vector3 center1 = (lvert [i * (nTunnelSides + 1) * 2 + side] + lvert [i * (nTunnelSides + 1)*2 + side + 1]) / 2;
+					Vector3 center2 = (lvert [(i + 1) * (nTunnelSides + 1)*2  + side] + lvert [(i + 1) * (nTunnelSides + 1)*2 + side + 1]) / 2;
+					Vector3 center = (center1 + center2) / 2f;
+
+					obj.transform.position = center;
+					obj.transform.rotation = tunnel.Rings [i].Rotation;
+					float degRot = tunnel.Rings[i].SideDegrees[side];
+					obj.transform.Rotate(Vector3.forward,degRot*Mathf.Rad2Deg);
+
+					if(isDangerous)obj.transform.Translate(0, scaleSize/2.25f,0);
+					else{
+						obj.transform.Translate(0, scaleSize/2f,0);
+						obj.transform.Rotate(Vector3.up,90);
+					}
+
+					obj.AddComponent<Rigidbody>().useGravity = false;
+					 
+					obj.GetComponent<Renderer>().material = mat;
+					cubes.Add (obj);
+				}
+			}
+		}
+
 
 
 		public Vector3 EndCenter{

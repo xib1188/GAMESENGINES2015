@@ -29,11 +29,14 @@ public class GameController : MonoBehaviour {
 
 	[HideInInspector]
 	public bool playerChange;
+	[HideInInspector]
+	public int score;
 
 	void Start () {
 		tControllers = new List<TunnelController> ();
 		//bWork = new BackgroundWork ();
 		//bWork.gC = this;
+		score = 0;
 		tunnelDepth = 100;
 		nSides = 6;//Random.Range (6, 10);
 		sideSize = 1f;
@@ -46,7 +49,8 @@ public class GameController : MonoBehaviour {
 			GameObject g = new GameObject();
 			g.name = "Tunnel" + i;
 			TunnelController tc = g.AddComponent<TunnelController>();
-			tc.Inicialize(tunnelDepth,nSides,sideSize,initialCenter,initialRotation,finalRotation,initialForm,finalForm);
+			tc.Inicialize(tunnelDepth,nSides,sideSize,score,initialCenter,
+			              initialRotation,finalRotation,initialForm,finalForm, (i==0));
 			tControllers.Add(tc);
 		
 			initialCenter = tc.EndCenter;
@@ -101,7 +105,7 @@ public class GameController : MonoBehaviour {
 		Vector2 rotation = RandomRotation ();
 		float[] form = RandomForm();
 		pCurrent = (playerController.CurrentTunnelNumber+1)%2;
-		tControllers[pCurrent].Refresh(initialCenter,initialRotation,rotation,initialForm,form);
+		tControllers[pCurrent].Refresh(score,initialCenter,initialRotation,rotation,initialForm,form);
 		initialRotation = rotation;
 		initialForm = form;
 		waiting = true;
@@ -127,6 +131,7 @@ public class GameController : MonoBehaviour {
 				playerChange = false;
 			}//RefreshTcontroller();
 		}
+
 	}
 
 	public PlayerController PlayerController{

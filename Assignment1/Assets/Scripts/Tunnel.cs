@@ -77,6 +77,7 @@ namespace GamesEngines{
 		}
 
 		public List<Vector3> GenerateVertices(){
+			//return a list of the vertices of all rings inside the tunnel (used to follow path)
 			List<Vector3> vertices = new List<Vector3> ();
 			for (int i = 0; i < depth; i++) {
 				vertices.AddRange(rings[i].FrontVertices);
@@ -86,6 +87,7 @@ namespace GamesEngines{
 		}
 		
 		public List<Vector3> GenerateMeshVertices(){
+			//return a list of vertices that can be used to generate a mesh
 			List<Vector3> vertices1 = new List<Vector3> ();
 			List<Vector3> vertices2 = new List<Vector3> ();
 			for (int i = 0; i < depth; i++) {
@@ -99,6 +101,7 @@ namespace GamesEngines{
 		}
 		
 		public List<int> GenerateMeshTriangles(){
+			//return a list of triangles that can be used to generate a mesh
 			List<int> triangles1 = new List<int> ();
 			List<int> triangles2 = new List<int> ();
 			int total = depth * nSides * 6;
@@ -116,26 +119,36 @@ namespace GamesEngines{
 			return tri;
 		}
 
-		public List<Vector2> GenerateMeshUvs(){
+		public List<Vector2> GenerateMeshUvs(int state){
+			//return a list of uv's that can be used to generate a mesh
+			/*
+			 * state == 0 -> all tiles sames color
+			 * state == 1 -> same color in one ring
+			 * state == 2 -> all tiles random
+			 */ 
+			if (state == 0)
+				state = 1;
 			List<Vector2> uvs1 = new List<Vector2> ();
 			List<Vector2> uvs2 = new List<Vector2> ();
 			int total = depth * nSides * 6;
-			int range = Random.Range (0, 3);
-			float x,y;
-			x = 0f;
-			y = 0.5f;
-			Vector2[] fl = new Vector2[6];
-			fl [0] = new Vector2 (0+x,0+y);
-			fl [1] = new Vector2 (0+x,0.5f+y);
-			fl [4] = new Vector2 (0.5f+x,0.5f+y);
-			fl [3] = new Vector2 (0f+x,0f+y);
-			fl [5] = new Vector2 (0.5f+x,0.5f+y);
-			fl [2] = new Vector2 (0.5f+x,0f+y);
 
-			for (int i = 0; i < total; i++) {
-				uvs1.Add(fl[i%6]);
-				uvs2.Add(fl[i%6]);
+			Vector2[] fl = new Vector2[6];
+			for (int i = 0; i < depth; i++) {
+				if(i%state == 0){
+					float range = Random.Range (0, 9)/10.0f;
+					fl [0] = new Vector2 (range, 0);
+					fl [1] = new Vector2 (range, 1);
+					fl [2] = new Vector2 (range + 0.1f, 0);
+					fl [3] = new Vector2 (range, 0);
+					fl [4] = new Vector2 (range + 0.1f, 1);
+					fl [5] = new Vector2 (range + 0.1f, 1);
+				}
+				for (int j = 0; j < nSides*6; j++) {
+					uvs1.Add (fl [j % 6]);
+					uvs2.Add (fl [j % 6]);
+				}
 			}
+
 			List<Vector2> uvs = new List<Vector2> ();
 			uvs.AddRange (uvs1);
 			uvs.AddRange (uvs2);
