@@ -13,6 +13,8 @@ namespace GamesEngines{
 		public float tunnelSideSize = 1.5f;
 		public Vector3 initialCenter;
 
+		private GameController gc;
+
 		public Vector2 initialRotation;
 		public Vector2 finalRotation;
 		public float[] initialForm;
@@ -26,6 +28,8 @@ namespace GamesEngines{
 		public TextAsset textureAsset;
 
 		public bool working = false;
+
+		private long[] objectCounters;
 
 		void Awake(){
 			this.enabled = false;
@@ -45,16 +49,17 @@ namespace GamesEngines{
 				texture.LoadImage(fileData);
 			}
 
-
 			texture.filterMode = FilterMode.Point;
 			//GenerateTexture();
 			GenerateMesh();
 
 			meshRenderer.material.SetTexture(0, texture);
+
+
 		}
 
 		public void Inicialize(int tunnelLength, int nTunnelSides, float tunnelSideSize,int score, Vector3 initialCenter,
-		                       Vector2 initialRotation, Vector2 finalRotation, float[] initialForm, float[] finalForm, bool first){
+		                       Vector2 initialRotation, Vector2 finalRotation, float[] initialForm, float[] finalForm, bool first, GameController gc){
 			this.tunnelLength = tunnelLength;
 			this.nTunnelSides = nTunnelSides;
 			this.tunnelSideSize = tunnelSideSize;
@@ -65,6 +70,8 @@ namespace GamesEngines{
 			this.finalForm = finalForm;
 			this.score = score;
 			this.firstRun = first;
+			this.gc = gc;
+			objectCounters = gc.Counters;
 			tunnel = new Tunnel(tunnelLength,nTunnelSides,tunnelSideSize);
 			tunnel.GenerateTunnel(initialCenter,initialRotation,finalRotation,initialForm,finalForm);
 			CreateObjects ();
@@ -82,7 +89,7 @@ namespace GamesEngines{
 			this.initialForm = initialForm;
 			this.finalForm = finalForm;
 			this.score = score;
-
+			objectCounters = gc.Counters;
 			BackgroundWorker backgroundWorker = new BackgroundWorker();
 
 			backgroundWorker.DoWork += (o, a) =>
@@ -129,12 +136,19 @@ namespace GamesEngines{
 		}
 		private List<GameObject> cubes;
 
+
 		void CreateObjects(){
 			if (cubes != null) {
 				for (int i = 0; i < cubes.Count; i++) {
 					Destroy (cubes [i]);
 				}
 			}
+
+			GameObject[] spells = new GameObject[3];
+			spells[0] = GameObject.Find("Components").transform.FindChild("Shield").gameObject;
+			spells [1] = GameObject.Find ("Components").transform.FindChild ("Bullet").gameObject;
+			spells [2] = GameObject.Find ("Components").transform.FindChild ("Heart").gameObject;
+
 			cubes = new List<GameObject> ();
 			//number of cubes based on the score (+score === +cubes === +difficulty)
 			int nCubes = Mathf.Min ((score / 500) + 1, 10) * 10;
@@ -153,25 +167,45 @@ namespace GamesEngines{
 
 
 			for (int i = starti; i < tunnelLength; i += iinc) {
+
 				bool[] s = new bool[nTunnelSides];
 				for (int j = 0; j < nSides; j++) {
-					int side = Random.Range (0, nTunnelSides-1);
+					int side = Random.Range (0, nTunnelSides);
 					while (s[side])
-						side = Random.Range (0, nTunnelSides-1);
+						side = Random.Range (0, nTunnelSides);
 
-					bool isDangerous = (Random.Range(0,10-nSides) == 0);
+					bool isSpell = (Random.Range (0,tunnelLength/(3+score/500)) == 0);
+
+					bool isDangerous = false;
+					if(!isSpell) isDangerous = (Random.Range(0,10-nSides) == 0);
 
 					GameObject obj;
 					Material mat;
-					if(isDangerous){
+					if(isSpell){
+						int r = Random.Range(0,3);
+						obj = Instantiate(spells[r])as GameObject;
+						obj.SetActive(true);
+						obj.name = "SpellClone"+objectCounters[0];
+						objectCounters[0]++;
+						obj.AddComponent<ComponentsController>();
+					}
+					else if(isDangerous){
 						obj = GameObject.CreatePrimitive (PrimitiveType.Cylinder);
 						obj.transform.localScale = new Vector3 (scaleSize, scaleSize/1.5f, scaleSize);
 						mat = Resources.Load("danger",typeof(Material)) as Material;
+						obj.GetComponent<Renderer>().material = mat;
+						obj.tag = "Nuclear";
+						obj.name = "Nuclear"+objectCounters[1];
+						objectCounters[1]++;
 					}
 					else{
 						obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
 						obj.transform.localScale = new Vector3 (scaleSize, scaleSize, scaleSize);
 						mat = Resources.Load("TNT",typeof(Material)) as Material;
+						obj.GetComponent<Renderer>().material = mat;
+						obj.name = "TNT"+objectCounters[2];
+						objectCounters[2]++;
+						obj.tag = "TNT";
 					}
 
 					Vector3 center1 = (lvert [i * (nTunnelSides + 1) * 2 + side] + lvert [i * (nTunnelSides + 1)*2 + side + 1]) / 2;
@@ -186,15 +220,21 @@ namespace GamesEngines{
 					if(isDangerous)obj.transform.Translate(0, scaleSize/2.25f,0);
 					else{
 						obj.transform.Translate(0, scaleSize/2f,0);
-						obj.transform.Rotate(Vector3.up,90);
+						if(!isSpell)obj.transform.Rotate(Vector3.up,90);
+						else{
+							if(obj.tag == "Heart")obj.transform.Rotate(Vector3.up,-90);
+							else if(obj.tag == "Shield")obj.transform.Rotate(Vector3.right,90);
+							else obj.transform.Rotate(Vector3.up,180);
+						}
 					}
 
 					obj.AddComponent<Rigidbody>().useGravity = false;
 					 
-					obj.GetComponent<Renderer>().material = mat;
+
 					cubes.Add (obj);
 				}
 			}
+
 		}
 
 

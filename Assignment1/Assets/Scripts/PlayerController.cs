@@ -54,6 +54,23 @@ public class PlayerController : MonoBehaviour {
 	private int scaleRatio = 200;
 
 
+	public Vector3 GetPathPoint(int n){
+
+		int diff;
+		int tn;
+		if(currentRingNumber+n >= ringSpace1.Length){
+			diff = (currentRingNumber+n-ringSpace1.Length);
+			tn =  (currentTunnelNumber + 1) % 2;
+		}
+		else{
+			diff = currentRingNumber+n;
+			tn = currentTunnelNumber;
+		}
+
+		if (tn == 0) return ringSpace1 [diff].StartCenter;
+		return ringSpace2 [diff].StartCenter;
+	}
+
 	public int CurrentTunnelNumber{
 		get{ return currentTunnelNumber;}
 	}
@@ -63,7 +80,17 @@ public class PlayerController : MonoBehaviour {
 	}
 
 
-	void Start () {
+	public void Inicialize(Ring[] l1, Ring[] l2, float size, float apothem, GameController gm){
+		/*function called by tha game controller to init and start the game*/
+		ringSpace1 = l1;	
+		ringSpace2 = l2;
+
+		//elevation = apothem / 2;
+		this.distance = distance;
+		this.speed = size;
+		this.gm = gm;
+		tunnelsSideSize = size;
+
 		currentTunnelNumber = 0;
 		currentRingNumber = 0;
 		tunnelsNSides = ringSpace1 [0].Nsides;
@@ -81,42 +108,33 @@ public class PlayerController : MonoBehaviour {
 		camera.transform.localPosition = new Vector3 (0, +0.8f*(scaleRatio/tunnelsSideSize),-0.25f*(scaleRatio/tunnelsSideSize));
 		camera.GetComponent<Camera> ().nearClipPlane = 0.01f;
 		camera.transform.localRotation = Quaternion.AngleAxis (5, Vector3.right);
-
-
-	}
-
-	public void Inicialize(Ring[] l1, Ring[] l2, float size, float apothem, GameController gm){
-		/*function called by tha game controller to init and start the game*/
-		ringSpace1 = l1;	
-		ringSpace2 = l2;
-
-		//elevation = apothem / 2;
-		this.distance = distance;
-		this.speed = size*10f;
-		this.gm = gm;
-		tunnelsSideSize = size;
-
-		this.enabled = true;
+		//this.enabled = true;
 	}
 
 	void Update () {
-		/*key control to change current track*/
-		if (Input.GetKey(KeyCode.A)&&!turning){
-			if(track>0){
-				lastTrack = track;
-				track--;
-				turning = true;
+
+			/*key control to change current track*/
+			if (Input.GetKey (KeyCode.A) && !turning) {
+				if (track > 0) {
+					lastTrack = track;
+					track--;
+					turning = true;
+				}
 			}
-		}
-		if (Input.GetKey(KeyCode.D) && !turning){
-			if(track < ringSpace1[0].SideDegrees.Length-1){
-				lastTrack = track;
-				track++;
-				turning = true;
+			if (Input.GetKey (KeyCode.D) && !turning) {
+				if (track < ringSpace1 [0].SideDegrees.Length - 1) {
+					lastTrack = track;
+					track++;
+					turning = true;
+				}
 			}
-		}
-	
-		Advance ();
+		
+			Advance ();
+			if(speed < tunnelsSideSize*10){
+				int aux = (int)(speed/tunnelsSideSize)+1;
+				speed = tunnelsSideSize*aux;
+			}
+
 	}
 
 	private float Perception(){
@@ -159,7 +177,7 @@ public class PlayerController : MonoBehaviour {
 			float degRot;
 			//if the player is changing the track, rotation is required
 			if(turning){
-				turnInc+=0.20f;
+				turnInc+=0.25f;
 				nextPathPoint = Vector3.Slerp(currentRing.SideEndCenter(lastTrack),currentRing.SideEndCenter(track),turnInc);
 				degRot = (currentRing.SideDegrees[track]-currentRing.SideDegrees[lastTrack])*turnInc + currentRing.SideDegrees[lastTrack];
 				
@@ -188,27 +206,6 @@ public class PlayerController : MonoBehaviour {
 		if (alertGameManager)
 			gm.playerChange = true;
 	}
-
-	void OnCollisionEnter(Collision col){
-		GameObject mainCamera = GameObject.Find ("Main Camera");
-		GameObject player = GameObject.Find ("Player");
-		GameObject cam = player.transform.FindChild("PlayerCam1").gameObject;
-
-		Vector3 pos = transform.position;
-
-		mainCamera.transform.position = transform.position;
-		mainCamera.transform.Translate (transform.up * 10);
-		mainCamera.transform.Translate (transform.right * 10);
-		mainCamera.transform.LookAt (transform.position);
-
-		cam.GetComponent<Camera> ().enabled = false;
-		mainCamera.GetComponent<Camera> ().enabled = true;
-
-		GameObject expl = player.transform.FindChild("Explosion").gameObject;
-		expl.SetActive (true);
-
-	}
-
 
 
 }

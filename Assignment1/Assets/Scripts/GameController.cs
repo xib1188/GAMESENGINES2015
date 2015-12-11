@@ -32,8 +32,19 @@ public class GameController : MonoBehaviour {
 	[HideInInspector]
 	public int score;
 
-	void Start () {
+	private long[] objectCounters;
+
+
+
+	public long[] Counters {
+		//return a normalized director vector of the figure 
+		get{ return objectCounters;}
+	}
+
+	void Awake () {
 		tControllers = new List<TunnelController> ();
+		objectCounters = new long[3];
+		objectCounters [0] = objectCounters [1] = objectCounters [2] = 0;
 		//bWork = new BackgroundWork ();
 		//bWork.gC = this;
 		score = 0;
@@ -50,7 +61,7 @@ public class GameController : MonoBehaviour {
 			g.name = "Tunnel" + i;
 			TunnelController tc = g.AddComponent<TunnelController>();
 			tc.Inicialize(tunnelDepth,nSides,sideSize,score,initialCenter,
-			              initialRotation,finalRotation,initialForm,finalForm, (i==0));
+			              initialRotation,finalRotation,initialForm,finalForm, (i==0),this);
 			tControllers.Add(tc);
 		
 			initialCenter = tc.EndCenter;
@@ -60,7 +71,7 @@ public class GameController : MonoBehaviour {
 			finalForm = RandomForm();
 		}
 
-		player = GameObject.Find ("Player");
+		//player = GameObject.Find ("Player");
 		//player.transform.localScale = new Vector3 (0.001f, 0.001f, 0.001f);
 		playerController = player.AddComponent<PlayerController> ();
 
@@ -69,8 +80,8 @@ public class GameController : MonoBehaviour {
 		                            tControllers[0].Apothem,this);
 
 		playerChange = false;
-		playerController.enabled = true;
 
+		this.enabled = false;
 	}
 
 	public Vector2 RandomRotation(){
@@ -120,6 +131,7 @@ public class GameController : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+		if(playerController != null && !playerController.enabled) playerController.enabled = true;
 		if (waiting) {
 			if (!(waiting = tControllers [pCurrent].working)) {
 				UpdateData ();
