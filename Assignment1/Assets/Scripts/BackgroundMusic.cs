@@ -1,16 +1,18 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+/*
+ * controls the music behaviour
+ */ 
 public class BackgroundMusic : MonoBehaviour {
-
-	// Use this for initialization
+	
 	public AudioClip MenuMusic;
 	public AudioClip ButtonMusic;
 	public AudioClip CountDown;
 
 	public AudioClip[] SoundTracks;
 
-	private int currentTrack = 0;
+	private int currentTrack;
 	private bool inGame = false;
 
 	private AudioSource source;
@@ -18,6 +20,7 @@ public class BackgroundMusic : MonoBehaviour {
 	void Awake () {
 		source = GetComponent<AudioSource>();
 		DontDestroyOnLoad (gameObject);
+		currentTrack = Random.Range (0, 4);
 	}
 
 	void OnLevelWasLoaded(int level){
@@ -27,7 +30,6 @@ public class BackgroundMusic : MonoBehaviour {
 			source.Play();
 		}
 		if (level == 1) {
-			Debug.Log(source.isPlaying);
 			source.clip = CountDown;
 			source.loop = false;
 			source.Play();
@@ -51,7 +53,8 @@ public class BackgroundMusic : MonoBehaviour {
 	void Update(){
 		if (inGame) {
 			if(!source.isPlaying){
-				currentTrack = (currentTrack++)%SoundTracks.Length;
+				currentTrack++;
+				if(currentTrack == SoundTracks.Length) currentTrack =0;
 				source.clip = SoundTracks [currentTrack];
 				source.Play ();
 			}

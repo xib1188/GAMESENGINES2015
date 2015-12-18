@@ -45,15 +45,15 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\ComponentsController.cs" />
-     <Compile Include="Assets\ExplosionSoundController.cs" />
      <Compile Include="Assets\Scripts\BackgroundMusic.cs" />
      <Compile Include="Assets\Scripts\BackgroundWorker.cs" />
      <Compile Include="Assets\Scripts\CollisionController.cs" />
-     <Compile Include="Assets\Scripts\FPSController.cs" />
+     <Compile Include="Assets\Scripts\ComponentsController.cs" />
+     <Compile Include="Assets\Scripts\ExplosionSoundController.cs" />
      <Compile Include="Assets\Scripts\GameController.cs" />
      <Compile Include="Assets\Scripts\PlayerController.cs" />
      <Compile Include="Assets\Scripts\Ring.cs" />
+     <Compile Include="Assets\Scripts\ScoreScript.cs" />
      <Compile Include="Assets\Scripts\StartGame.cs" />
      <Compile Include="Assets\Scripts\Starter.cs" />
      <Compile Include="Assets\Scripts\Tunnel.cs" />

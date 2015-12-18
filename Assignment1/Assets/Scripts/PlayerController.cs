@@ -3,10 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using GamesEngines;
 
+/*
+ * 
+ * control the movement and behaviour of the spaceship
+ */
 public class PlayerController : MonoBehaviour {
-
-
-
 
 	private GameController gm;
 	private GameObject camera;
@@ -23,6 +24,10 @@ public class PlayerController : MonoBehaviour {
 	private int tunnelsNSides;
 	private int tunnelsLenght;
 
+	[HideInInspector]
+	public bool activeBullet;
+
+	private float speedInc;
 	//player speed
 	private float speed;
 	//player current track inside the tunnel
@@ -51,11 +56,13 @@ public class PlayerController : MonoBehaviour {
 
 	private Vector3 nextPathPoint;
 
+	//don't touch!!! scale model
 	private int scaleRatio = 200;
 
 
 	public Vector3 GetPathPoint(int n){
-
+		/*return the point position on the path of the (current_point + n) point*/
+		/*used by collision controller to place the camara on explosion*/
 		int diff;
 		int tn;
 		if(currentRingNumber+n >= ringSpace1.Length){
@@ -66,26 +73,26 @@ public class PlayerController : MonoBehaviour {
 			diff = currentRingNumber+n;
 			tn = currentTunnelNumber;
 		}
-
 		if (tn == 0) return ringSpace1 [diff].StartCenter;
 		return ringSpace2 [diff].StartCenter;
 	}
+
 
 	public int CurrentTunnelNumber{
 		get{ return currentTunnelNumber;}
 	}
 
 	void Awake(){
+		//stop running 'til advice (game controller)
 		this.enabled = false;
 	}
 
-
+	//set up values
 	public void Inicialize(Ring[] l1, Ring[] l2, float size, float apothem, GameController gm){
 		/*function called by tha game controller to init and start the game*/
 		ringSpace1 = l1;	
 		ringSpace2 = l2;
 
-		//elevation = apothem / 2;
 		this.distance = distance;
 		this.speed = size;
 		this.gm = gm;
@@ -97,6 +104,7 @@ public class PlayerController : MonoBehaviour {
 		track = tunnelsNSides / 2;
 		turnInc = 0;
 		turning = false;
+		activeBullet = false;
 		currentRing = ringSpace1 [currentRingNumber];
 		nextPathPoint = currentRing.SideEndCenter(track);
 		//player (ship) init
@@ -108,34 +116,45 @@ public class PlayerController : MonoBehaviour {
 		camera.transform.localPosition = new Vector3 (0, +0.8f*(scaleRatio/tunnelsSideSize),-0.25f*(scaleRatio/tunnelsSideSize));
 		camera.GetComponent<Camera> ().nearClipPlane = 0.01f;
 		camera.transform.localRotation = Quaternion.AngleAxis (5, Vector3.right);
-		//this.enabled = true;
 	}
 
 	void Update () {
 
 			/*key control to change current track*/
-			if (Input.GetKey (KeyCode.A) && !turning) {
-				if (track > 0) {
-					lastTrack = track;
-					track--;
-					turning = true;
-				}
+		if (Input.GetKey (KeyCode.A) && !turning) {
+			if (track > 0) {
+				lastTrack = track;
+				track--;
+				turning = true;
 			}
-			if (Input.GetKey (KeyCode.D) && !turning) {
-				if (track < ringSpace1 [0].SideDegrees.Length - 1) {
-					lastTrack = track;
-					track++;
-					turning = true;
-				}
+		}
+		if (Input.GetKey (KeyCode.D) && !turning) {
+			if (track < ringSpace1 [0].SideDegrees.Length - 1) {
+				lastTrack = track;
+				track++;
+				turning = true;
 			}
+		}
+		//key control to extra speed if "bullet" spell is active
+		if(Input.GetKey (KeyCode.W)){
+			
+			if(activeBullet){
+				speedInc = 2;
+			}
+			else speedInc = 1;
+		}
+		else speedInc = 1;
 		
-			Advance ();
-			if(speed < tunnelsSideSize*10){
-				int aux = (int)(speed/tunnelsSideSize)+1;
-				speed = tunnelsSideSize*aux;
-			}
+		Advance (); //advance method
+
+		//speed on start goes from 0 to tunnelsSideSize*10 "soft start"
+		if(speed < tunnelsSideSize*10){
+			int aux = (int)(speed/tunnelsSideSize)+1;
+			speed = tunnelsSideSize*aux;
+		}
 
 	}
+
 
 	private float Perception(){
 		/*this function returns <=0 if the next target point is behind the player
@@ -147,7 +166,7 @@ public class PlayerController : MonoBehaviour {
 	}
 	
 	void Advance(){
-		float speedDelta = speed * Time.deltaTime;
+		float speedDelta = speed * Time.deltaTime * speedInc;
 
 		/*
 		 * when a new ringspace is reached, the game manager is alerted.
@@ -194,15 +213,11 @@ public class PlayerController : MonoBehaviour {
 			//update spaceship info
 			gameObject.transform.rotation = currentRing.Rotation;
 			transform.Rotate(Vector3.forward,degRot*Mathf.Rad2Deg,Space.Self);
-
 			gameObject.transform.LookAt(nextPathPoint,gameObject.transform.up);
-
 		}
-
-
-
 		transform.Translate (new Vector3 (0,0,speedDelta));
 
+		//if new tunnel needed alert game controller to create a new one
 		if (alertGameManager)
 			gm.playerChange = true;
 	}

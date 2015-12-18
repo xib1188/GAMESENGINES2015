@@ -2,7 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-
+/*
+ * it controls the creation of tunnel and objects inside it
+ * 
+ */
 namespace GamesEngines{
 	public class TunnelController : MonoBehaviour {
 		private bool firstRun;
@@ -50,14 +53,14 @@ namespace GamesEngines{
 			}
 
 			texture.filterMode = FilterMode.Point;
-			//GenerateTexture();
+
 			GenerateMesh();
 
 			meshRenderer.material.SetTexture(0, texture);
 
 
 		}
-
+		//set up
 		public void Inicialize(int tunnelLength, int nTunnelSides, float tunnelSideSize,int score, Vector3 initialCenter,
 		                       Vector2 initialRotation, Vector2 finalRotation, float[] initialForm, float[] finalForm, bool first, GameController gc){
 			this.tunnelLength = tunnelLength;
@@ -75,11 +78,12 @@ namespace GamesEngines{
 			tunnel = new Tunnel(tunnelLength,nTunnelSides,tunnelSideSize);
 			tunnel.GenerateTunnel(initialCenter,initialRotation,finalRotation,initialForm,finalForm);
 			CreateObjects ();
+			//enabled by player controller
 			this.enabled = true;
 		}
 
 		List<BackgroundWorker> workers = new List<BackgroundWorker>();
-
+		//create a new tunnel using background workers
 		public void Refresh(int score, Vector3 initialCenter, Vector2 initialRotation, Vector2 finalRotation,
 		                    float[] initialForm, float[] finalForm){
 			working = true;
@@ -101,7 +105,7 @@ namespace GamesEngines{
 			{
 				CreateObjects ();
 				GenerateMesh();	
-				//GenerateTexture();
+
 				meshRenderer.material.SetTexture(0, texture);
 				working = false;
 			};
@@ -115,16 +119,7 @@ namespace GamesEngines{
 			tunnel.GenerateTunnel(initialCenter,initialRotation,finalRotation,initialForm,finalForm);
 		}
 
-		void GenerateTexture(){
-			int r = Random.Range (1, 4);
-			for (int x = 0; x < tunnel.NSides; x++){
-				Color c = new Color(Random.Range(0.0f,1.0f),Random.Range(0.0f,1.0f),Random.Range(0.0f,1.0f));
-				for (int y = 0; y < tunnel.Depth; y++){
-					texture.SetPixel(x, y, c);                     
-				}
-			}
-			texture.Apply();
-		}
+
 
 		void GenerateMesh(){
 			int uvsState = Random.Range(1, tunnel.Depth);
@@ -136,23 +131,25 @@ namespace GamesEngines{
 		}
 		private List<GameObject> cubes;
 
-
+		//creates randomly objects to put in the tunnel
 		void CreateObjects(){
+			//inicialize cube array
 			if (cubes != null) {
 				for (int i = 0; i < cubes.Count; i++) {
 					Destroy (cubes [i]);
 				}
 			}
-
+			//find objects to clone them
 			GameObject[] spells = new GameObject[3];
 			spells[0] = GameObject.Find("Components").transform.FindChild("Shield").gameObject;
 			spells [1] = GameObject.Find ("Components").transform.FindChild ("Bullet").gameObject;
 			spells [2] = GameObject.Find ("Components").transform.FindChild ("Heart").gameObject;
 
+			
 			cubes = new List<GameObject> ();
 			//number of cubes based on the score (+score === +cubes === +difficulty)
-			int nCubes = Mathf.Min ((score / 500) + 1, 10) * 10;
-			int nSides = Mathf.Min ((score / 5000) + 1, (tunnel.NSides / 2) - 1);	
+			int nCubes = Mathf.Min ((score / 300) + 1, 10) * 10;
+			int nSides = Mathf.Min ((score / 3000) + 1, (tunnel.NSides / 2) - 1);	
 
 			//ratios of danger object (r/10, r+=1 every 5000 score)
 			float dangerRatio = nSides / 10f;
@@ -165,7 +162,7 @@ namespace GamesEngines{
 			if (firstRun)
 				starti = 10;
 
-
+			//every iinc a new object is created
 			for (int i = starti; i < tunnelLength; i += iinc) {
 
 				bool[] s = new bool[nTunnelSides];
@@ -174,14 +171,16 @@ namespace GamesEngines{
 					while (s[side])
 						side = Random.Range (0, nTunnelSides);
 
-					bool isSpell = (Random.Range (0,tunnelLength/(3+score/500)) == 0);
-
+					//rate for spell
+					bool isSpell = (Random.Range (0,tunnelLength/(3+score/300)) == 0);
+					//rate for nuclear 
 					bool isDangerous = false;
 					if(!isSpell) isDangerous = (Random.Range(0,10-nSides) == 0);
 
 					GameObject obj;
 					Material mat;
 					if(isSpell){
+						//random creates a spell
 						int r = Random.Range(0,3);
 						obj = Instantiate(spells[r])as GameObject;
 						obj.SetActive(true);
@@ -190,33 +189,54 @@ namespace GamesEngines{
 						obj.AddComponent<ComponentsController>();
 					}
 					else if(isDangerous){
+						//create a nuclear and inicialize its components
 						obj = GameObject.CreatePrimitive (PrimitiveType.Cylinder);
 						obj.transform.localScale = new Vector3 (scaleSize, scaleSize/1.5f, scaleSize);
 						mat = Resources.Load("danger",typeof(Material)) as Material;
 						obj.GetComponent<Renderer>().material = mat;
 						obj.tag = "Nuclear";
 						obj.name = "Nuclear"+objectCounters[1];
+						AudioSource audio = obj.AddComponent<AudioSource>();
+						audio.clip = Resources.Load("Sounds/Explosion",typeof(AudioClip)) as AudioClip;
+						audio.playOnAwake = false;
+						audio.enabled = true;
+						obj.AddComponent<ComponentsController>();
+						GameObject components = GameObject.Find("Components");
+						GameObject expl = components.transform.FindChild("Explosion").gameObject;
+						GameObject explClone = Instantiate(expl) as GameObject;
+						explClone.transform.parent = obj.transform;
 						objectCounters[1]++;
 					}
 					else{
+						//create a tnt and inicialize its components
 						obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
 						obj.transform.localScale = new Vector3 (scaleSize, scaleSize, scaleSize);
 						mat = Resources.Load("TNT",typeof(Material)) as Material;
 						obj.GetComponent<Renderer>().material = mat;
 						obj.name = "TNT"+objectCounters[2];
+						AudioSource audio = obj.AddComponent<AudioSource>();
+						audio.clip = Resources.Load("Sounds/Explosion",typeof(AudioClip)) as AudioClip;
+						audio.playOnAwake = false;
+						audio.enabled = true;
+						obj.AddComponent<ComponentsController>();
+						GameObject components = GameObject.Find("Components");
+						GameObject expl = components.transform.FindChild("Explosion").gameObject;
+						GameObject explClone = Instantiate(expl) as GameObject;
+						explClone.transform.parent = obj.transform;
 						objectCounters[2]++;
 						obj.tag = "TNT";
-					}
 
+					}
+					//get the point to place the object
 					Vector3 center1 = (lvert [i * (nTunnelSides + 1) * 2 + side] + lvert [i * (nTunnelSides + 1)*2 + side + 1]) / 2;
 					Vector3 center2 = (lvert [(i + 1) * (nTunnelSides + 1)*2  + side] + lvert [(i + 1) * (nTunnelSides + 1)*2 + side + 1]) / 2;
 					Vector3 center = (center1 + center2) / 2f;
-
+					//place the object
 					obj.transform.position = center;
 					obj.transform.rotation = tunnel.Rings [i].Rotation;
 					float degRot = tunnel.Rings[i].SideDegrees[side];
 					obj.transform.Rotate(Vector3.forward,degRot*Mathf.Rad2Deg);
-
+					//scale and rotate the object 
 					if(isDangerous)obj.transform.Translate(0, scaleSize/2.25f,0);
 					else{
 						obj.transform.Translate(0, scaleSize/2f,0);
@@ -250,7 +270,7 @@ namespace GamesEngines{
 			get{ return tunnel.Rings;}
 		}
 
-
+		//control about background workers
 		void Update(){
 			for(int i = workers.Count - 1 ; i >=  0 ; i --)
 			{

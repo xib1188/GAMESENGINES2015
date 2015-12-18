@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
-
+/*
+ * start the game and create the game controller
+ */
 public class Starter : MonoBehaviour {
 
 

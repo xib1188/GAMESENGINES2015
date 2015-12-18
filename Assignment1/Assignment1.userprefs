@@ -1,16 +1,8 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\ExplosionSoundController.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\TunnelController.cs">
     <Files>
-      <File FileName="Assets\Scripts\PlayerController.cs" Line="180" Column="18" />
-      <File FileName="Assets\Scripts\Tunnel.cs" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\TunnelController.cs" Line="177" Column="53" />
-      <File FileName="Assets\Scripts\GameController.cs" Line="134" Column="34" />
-      <File FileName="Assets\Scripts\Ring.cs" Line="58" Column="4" />
-      <File FileName="Assets\Scripts\CollisionController.cs" Line="40" Column="7" />
-      <File FileName="Assets\Scripts\BackgroundMusic.cs" Line="19" Column="40" />
-      <File FileName="Assets\ComponentsController.cs" Line="8" Column="27" />
-      <File FileName="Assets\ExplosionSoundController.cs" Line="7" Column="69" />
+      <File FileName="Assets\Scripts\TunnelController.cs" Line="273" Column="37" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
